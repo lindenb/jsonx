@@ -1,0 +1,280 @@
+/**
+ * Author:
+ * 	Pierre Lindenbaum PhD
+ */
+options {
+STATIC=false;
+}
+
+
+PARSER_BEGIN(JsonParser)
+
+package com.github.lindenb.jsonx.parser;
+import com.github.lindenb.jsonx.*;
+import java.util.*;
+import java.io.*;
+import java.math.*;
+import javax.annotation.Generated;
+
+@SuppressWarnings("unchecked")
+@Generated("javacc")
+public class JsonParser
+{
+private JsonFactory jsonFactory=new JsonFactory();
+
+private String unescape(String s) throws ParseException
+	{
+	 StringBuilder b=new StringBuilder(s.length());
+        int i=0;
+        while(i<s.length())
+        	{
+        	if(s.charAt(i)=='\\')
+        		{
+        		if( i+1== s.length())  throw new ParseException("Badly escaped string "+s);
+        		++i;
+        		switch(s.charAt(i))
+        			{
+        			case 'n': b.append("\n");break;
+        			case 'r': b.append("\r");break;
+        			case 't': b.append("\t");break;
+        			case '\\': b.append("\\");break;
+        			case '\'': b.append("\'");break;
+        			case '\"': b.append("\"");break;
+        			default: throw new ParseException("Badly escaped string "+s);
+        			}
+        		}
+        	else
+        		{
+        		b.append(s.charAt(i));
+        		}
+        	++i;
+        	}
+        return b.toString();
+	}
+}
+
+
+PARSER_END(JsonParser)
+
+SKIP :
+{
+" "
+| "\t"
+| "\n"
+| "\r"
+| <"//" (~["\n"])* "\n">
+| <"/*">: INSIDE_COMMENT
+}
+
+<INSIDE_COMMENT>
+SKIP:
+{
+        <"*/">: DEFAULT
+|       <~[]>
+}
+
+
+
+TOKEN : /* LITERALS */
+{
+  <TRUE: "true">
+| <FALSE: "false">
+| <NULL: "null">
+| <#LETTER: ["_","a"-"z","A"-"Z"] >
+| <#DIGIT: ["0"-"9"] >
+| <#SIGN: ["-","+"]>
+| <#EXPONENT: ("E"|"e") (<SIGN>)? (<DIGIT>)+ >
+| <FLOATING_NUMBER: (<DIGIT>)* "." (<DIGIT>)* (<EXPONENT>)?
+| (<DIGIT>)+ (<EXPONENT>) >
+| <INT_NUMBER: (<DIGIT>)+ >
+| <IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>|"-")* >
+| <#ESCAPE_CHAR: "\\" ["n","t","b","r","f","\\","'","\""] >
+| <SIMPLE_QUOTE_LITERAL:
+"\'"
+( (~["\'","\\","\n","\r"])
+| <ESCAPE_CHAR>
+)*
+"\'"
+>
+|
+<DOUBLE_QUOTE_LITERAL:
+"\""
+( (~["\"","\\","\n","\r"])
+| <ESCAPE_CHAR>
+)*
+"\""
+>
+| <ARRAY_OPEN: "[">
+| <ARRAY_CLOSE: "]">
+| <COMMA: ",">
+| <OBJECT_OPEN: "{">
+| <OBJECT_CLOSE: "}">
+| <PAR_OPEN: "(">
+| <PAR_CLOSE: ")">
+| <COLON: ":">
+}
+
+public JsonElement parse():{JsonElement o;}
+	{
+	o=any() eof()
+		{
+		return o;
+		}
+	}
+
+private JsonElement any():
+	{JsonElement o;}
+	{
+	(
+	o= complexNode()
+	| o= terminalNode()
+	)
+	{return o;}
+	}
+
+public JsonElement complexNode():
+	{JsonElement o;}
+	{
+	(
+	o= objectNode()
+	| o= arrayNode()
+	)
+	{return o;}
+	}
+
+public JsonElement terminalNode():
+	{
+	JsonElement n;
+	}
+	{
+	(
+	  n=decimalNode() { return n;}
+	| n=intNode() { return n;}
+	| n=boolNode() { return n;}
+	| n=nilNode() { return n;}
+	| n=stringNode() { return n;}
+	)
+	}
+
+public JsonNull nilNode():{}
+	{
+	<NULL> { return jsonFactory.newNull(); }
+	}
+
+public JsonPrimitive boolNode():{}
+	{
+	(
+	  <TRUE>  { return jsonFactory.newTrue(); }
+	| <FALSE> { return jsonFactory.newFalse(); }
+	)
+	}
+
+public JsonPrimitive intNode():{	Token t;}
+	{
+	t=<INT_NUMBER> { return jsonFactory.newNumber(new BigInteger(t.image)); }
+	}
+
+public JsonPrimitive decimalNode():{	Token t;}
+	{
+	t=<FLOATING_NUMBER> {return jsonFactory.newNumber(new BigDecimal(t.image)); }
+	}
+
+public JsonPrimitive stringNode():{	String s;}
+	{
+	s=characters() { return jsonFactory.newString(s); }
+	}
+
+
+private String characters():
+	{
+	Token t;
+	}
+	{
+	(
+	t=<SIMPLE_QUOTE_LITERAL>
+		{
+		return  unescape(t.image.substring(1,t.image.length()-1));
+		}
+	| t=<DOUBLE_QUOTE_LITERAL>
+		{
+		return unescape(t.image.substring(1,t.image.length()-1));
+		}
+	| t=<IDENTIFIER>
+	     {
+	     return t.image;
+	     }
+	)
+	}
+
+public JsonArray arrayNode():
+	{ JsonArray vector=jsonFactory.newArray(); JsonElement o;}
+	{
+	openArray() ( o=any() {vector.add(o);} (comma() o=any() {vector.add(o);} ) * )? closeArray()
+		{
+		return vector;
+		}
+	}
+
+public JsonObject objectNode():
+	{JsonObject map= jsonFactory.newObject(); }
+	{
+	openObject() ( keyValue(map) (comma() keyValue(map))*)? closeObject()
+		{
+		return map;
+		}
+	}
+
+public void colon():
+   {
+   }
+   {
+   <COLON>
+   }
+
+private void keyValue( JsonObject map):
+	{String k; JsonElement v;}
+	{
+	(k=characters() colon() v=any())
+		{
+		if(map.containsKey(k)) throw new ParseException(k+" defined twice in object");
+		map.put(k,v);
+		}
+	}
+	
+/** function for streaming big object/array */
+public void openObject():{}
+	{
+	<OBJECT_OPEN>
+	}
+
+/** function for streaming big object/array */
+public void closeObject():{}
+	{
+	<OBJECT_CLOSE>
+	}
+
+/** function for streaming big object/array */
+public void openArray():{}
+	{
+	<ARRAY_OPEN>
+	}
+
+/** function for streaming big object/array */
+public void closeArray():{}
+	{
+	<ARRAY_CLOSE>
+	}
+
+/** function for streaming big object/array */
+public void comma():{}
+	{
+	<COMMA>
+	}
+
+/** go to EOF, check that there are only some blanks chars */
+public void eof():{}
+	{
+	<EOF>
+	}	
+	
+

@@ -1,0 +1,32 @@
+<project default="lib">
+	<target name="lib" depends="generate-sources">
+		<mkdir dir="tmp"/>
+		<mkdir dir="lib"/>
+		<javac destdir="tmp">
+			<src path="src/main/java"/>
+			<src path="src/main/generated-sources/javacc"/>
+			<include name="**/*.java"/>
+		</javac>
+		<jar destfile="lib/jsonx.jar" basedir="tmp">
+			
+		</jar>
+		<delete dir="tmp"/>
+	</target>
+	
+	
+	<target name="generate-sources">
+		<property name="jj.dir" value="./src/main/resources/javacc/com/github/lindenb/jsonx/parser"/>
+		<property name="jj.dest" value="./src/main/generated-sources/javacc/com/github/lindenb/jsonx/parser"/>
+		<mkdir dir="${jj.dest}"/>
+		<delete file="${jj.dest}/TokenMgrError.java"/>
+		<delete file="$jj.dest}/ParseException.java"/>
+		<delete file="${jj.dest}/Token.java"/>
+		<delete file="${jj.dest}/SimpleCharStream.java"/>
+		<exec executable="javacc">
+			<arg value="-OUTPUT_DIRECTORY=${jj.dest}"/>
+			<arg value="${jj.dir}/JSONParser.jj"/>
+		</exec>
+	</target>
+
+	
+</project>

@@ -1,5 +1,7 @@
 package com.github.lindenb.jsonx;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Set;
 
 public interface JsonObject extends JsonElement
@@ -15,4 +17,15 @@ public interface JsonObject extends JsonElement
 	@Override
 	public JsonObject cloneElement();
 
+	
+	//shortcuts
+	public JsonElement put(String key,String E);
+	public JsonElement put(String key,BigInteger E);
+	public JsonElement put(String key,BigDecimal E);
+	public JsonElement put(String key,boolean b);
+	public JsonElement put(String key,int v);
+	public JsonElement put(String key,long v);
+	public JsonElement put(String key,float v);
+	public JsonElement put(String key,double v);
+	
 	}

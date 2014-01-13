@@ -1,5 +1,7 @@
 package com.github.lindenb.jsonx.impl;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -73,5 +75,45 @@ public class JsonObjectImpl extends AbstractJsonElement implements JsonObject
 			M.put(key,this.map.get(key).cloneElement());
 			}
 		return M;
+		}
+	
+	@Override
+	public JsonElement put(String key, BigDecimal E)
+		{
+		return put(key,E==null?new JsonNullImpl():new JsonPrimitiveImpl(E));
+		}
+	@Override
+	public JsonElement put(String key, BigInteger E)
+		{
+		return put(key,E==null?new JsonNullImpl():new JsonPrimitiveImpl(E));
+		}
+	@Override
+	public JsonElement put(String key, boolean b)
+		{
+		return put(key,new JsonPrimitiveImpl(b));
+		}
+	
+	@Override
+	public JsonElement put(String key, String E) {
+		return put(key,E==null?new JsonNullImpl():new JsonPrimitiveImpl(E));
+		}
+	
+	
+	@Override
+	public JsonElement put(String key, int E) {
+		return put(key,new BigInteger(String.valueOf(E)));
+		}
+	@Override
+	public JsonElement put(String key, long E) {
+		return put(key,new BigInteger(String.valueOf(E)));
+		}
+	@Override
+	public JsonElement put(String key, float E) {
+		return put(key,new BigDecimal(E));
+		}
+
+	@Override
+	public JsonElement put(String key,double E) {
+		return put(key,new BigDecimal(E));
 		}
 	}
