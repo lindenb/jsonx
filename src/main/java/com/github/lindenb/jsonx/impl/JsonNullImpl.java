@@ -15,4 +15,17 @@ public class JsonNullImpl extends AbstractJsonElement
 		{
 		return new JsonNullImpl();
 		}
+	
+	@Override
+	public int hashCode() {
+		return -1;
+		}
+	@Override
+	public boolean equals(Object obj) {
+		if(obj==this) return true;
+		if(obj==null || !(obj instanceof JsonNull)) return false;
+		return true;
+		}
+
+	
 	}
