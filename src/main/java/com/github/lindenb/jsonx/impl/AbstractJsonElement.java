@@ -12,11 +12,39 @@ import com.github.lindenb.jsonx.io.JsonPrettyWriter;
 
 public abstract class AbstractJsonElement implements JsonElement
 	{
+	private static long ID_GENERATOR=System.currentTimeMillis();
+	private long _id=-1L;
 	private static final long serialVersionUID = 1L;
 	protected JsonElement parent=null;
 	protected AbstractJsonElement()
 		{
 		}
+	
+	private static String make_id(long x)
+		{
+		return "n"+x;
+		}
+	
+	@Override
+	public String getId()
+		{
+		if(_id==-1L) _id=(++ID_GENERATOR);
+		return make_id(this._id);
+		}
+	@Override
+	public boolean hasId(String id)
+		{
+		if(_id==-1 || id==null) return false;
+		return id.equals(make_id(_id));
+		}
+	
+	@Override
+	public JsonElement findById(String id)
+		{
+		return (hasId(id)?this:null);
+		}
+
+	
 	
 	@Override
 	public JsonElement getParent() {

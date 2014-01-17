@@ -19,6 +19,20 @@ public class JsonArrayImpl extends AbstractJsonElement implements JsonArray
 		
 		}
 	
+	
+	@Override
+	public JsonElement findById(String id)
+		{
+		if(hasId(id)) return this;
+		for(JsonElement E:this.array)
+			{
+			JsonElement E2=E.findById(id);
+			if(E2!=null) return E2;
+			}
+		return null;
+		}
+
+	
 	@Override
 	public final boolean isJsonArray() {
 		return true;

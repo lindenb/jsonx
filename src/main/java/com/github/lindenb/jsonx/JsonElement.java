@@ -7,6 +7,10 @@ import java.math.BigInteger;
 
 public interface JsonElement extends Serializable
 	{
+	public String getId();
+	public boolean hasId(String id);
+	public JsonElement findById(String id);
+	
 	public boolean isJsonArray();
 	public boolean isJsonNull();
 	public boolean isJsonObject();

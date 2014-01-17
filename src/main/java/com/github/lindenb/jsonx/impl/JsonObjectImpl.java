@@ -16,6 +16,28 @@ public class JsonObjectImpl extends AbstractJsonElement implements JsonObject
 	{
 	private static final long serialVersionUID = 1L;
 	private LinkedHashMap<String, JsonElement> map=new LinkedHashMap<String,JsonElement>();
+	
+	
+	
+	
+	
+	
+	@Override
+	public JsonElement findById(String id)
+		{
+		if(hasId(id)) return this;
+		for(String key:this.keySet())
+			{
+			JsonElement E2=get(key).findById(id);
+			if(E2!=null) return E2;
+			}
+		return null;
+		}
+
+	
+	
+	
+	
 	@Override
 	public final boolean isJsonObject() {
 		return true;
