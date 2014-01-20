@@ -29,4 +29,34 @@
 	</target>
 
 	
+	<target name="json2jsonx" depends="generate-json2jsonx">
+		<mkdir dir="tmp"/>
+		<mkdir dir="dist"/>
+		<javac destdir="tmp">
+			<src path="src/main/java"/>
+			<src path="src/main/generated-sources/javacc"/>
+			<include name="**/*.java"/>
+		</javac>
+		<jar destfile="dist/json2jsonx.jar" basedir="tmp">
+			
+		</jar>
+		<delete dir="tmp"/>
+	</target>
+	
+	
+	<target name="generate-json2jsonx">
+			<property name="jj.dir" value="./src/main/resources/javacc/com/github/lindenb/jsonx/parser"/>
+			<property name="jj.dest" value="./src/main/generated-sources/javacc/com/github/lindenb/jsonx/json2jsonx"/>
+			<mkdir dir="${jj.dest}"/>
+			<delete file="${jj.dest}/TokenMgrError.java"/>
+			<delete file="$jj.dest}/ParseException.java"/>
+			<delete file="${jj.dest}/Token.java"/>
+			<delete file="${jj.dest}/SimpleCharStream.java"/>
+			<exec executable="javacc">
+				<arg value="-OUTPUT_DIRECTORY=${jj.dest}"/>
+				<arg value="${jj.dir}/json2jsonx.jj"/>
+			</exec>
+	</target>
+	
+	
 </project>

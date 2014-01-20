@@ -1,0 +1,327 @@
+/**
+ * Author:
+ * 	Pierre Lindenbaum PhD
+ */
+options {
+STATIC=false;
+}
+
+
+PARSER_BEGIN(JsonToJsonx)
+
+package com.github.lindenb.jsonx.json2jsonx;
+import com.github.lindenb.jsonx.*;
+import java.util.*;
+import java.io.*;
+import java.math.*;
+import javax.annotation.Generated;
+import javax.xml.stream.*;
+
+@SuppressWarnings("unchecked")
+@Generated("javacc")
+public class JsonToJsonx
+{
+private XMLStreamWriter w=null;
+private String prefix="jsonx";
+private String namespaceURI="http://www.ibm.com/xmlns/prod/2009/jsonx";
+
+
+private String unescape(String s) throws ParseException
+	{
+	 StringBuilder b=new StringBuilder(s.length());
+        int i=0;
+        while(i<s.length())
+        	{
+        	if(s.charAt(i)=='\\')
+        		{
+        		if( i+1== s.length())  throw new ParseException("Badly escaped string "+s);
+        		++i;
+        		switch(s.charAt(i))
+        			{
+        			case 'n': b.append("\n");break;
+        			case 'r': b.append("\r");break;
+        			case 't': b.append("\t");break;
+        			case '\\': b.append("\\");break;
+        			case '\'': b.append("\'");break;
+        			case '\"': b.append("\"");break;
+        			default: throw new ParseException("Badly escaped string "+s);
+        			}
+        		}
+        	else
+        		{
+        		b.append(s.charAt(i));
+        		}
+        	++i;
+        	}
+        return b.toString();
+	}
+
+
+public static void main(String args[])
+	{
+	try
+		{
+		InputStream in=null;
+		if(args.length==0)
+			{
+			in=System.in;
+			}
+		else if(args.length==1)
+			{
+			in=new FileInputStream(args[0]);
+			}
+		else
+			{
+			System.err.println("Illegal number of arguments");
+			System.exit(-1);
+			}
+		JsonToJsonx app=new JsonToJsonx(in);
+		XMLOutputFactory xmlfactory= XMLOutputFactory.newInstance();
+		xmlfactory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES,Boolean.TRUE);
+		app.w= xmlfactory.createXMLStreamWriter(System.out,"UTF-8");
+		app.w.writeStartDocument("UTF-8","1.0");
+		app.parse();
+		app.w.writeEndDocument();
+		app.w.close();
+		in.close();
+		}
+	catch(Exception err)
+		{
+		err.printStackTrace();
+		System.exit(-1);
+		}
+	}
+}
+
+
+PARSER_END(JsonToJsonx)
+
+SKIP :
+{
+" "
+| "\t"
+| "\n"
+| "\r"
+| <"//" (~["\n"])* "\n">
+| <"/*">: INSIDE_COMMENT
+}
+
+<INSIDE_COMMENT>
+SKIP:
+{
+        <"*/">: DEFAULT
+|       <~[]>
+}
+
+
+
+TOKEN : /* LITERALS */
+{
+  <TRUE: "true">
+| <FALSE: "false">
+| <NULL: "null">
+| <#LETTER: ["_","a"-"z","A"-"Z"] >
+| <#DIGIT: ["0"-"9"] >
+| <#SIGN: ["-","+"]>
+| <#EXPONENT: ("E"|"e") (<SIGN>)? (<DIGIT>)+ >
+| <FLOATING_NUMBER: (<DIGIT>)* "." (<DIGIT>)* (<EXPONENT>)?
+| (<DIGIT>)+ (<EXPONENT>) >
+| <INT_NUMBER: (<DIGIT>)+ >
+| <IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>|"-")* >
+| <#ESCAPE_CHAR: "\\" ["n","t","b","r","f","\\","'","\""] >
+| <SIMPLE_QUOTE_LITERAL:
+"\'"
+( (~["\'","\\","\n","\r"])
+| <ESCAPE_CHAR>
+)*
+"\'"
+>
+|
+<DOUBLE_QUOTE_LITERAL:
+"\""
+( (~["\"","\\","\n","\r"])
+| <ESCAPE_CHAR>
+)*
+"\""
+>
+| <ARRAY_OPEN: "[">
+| <ARRAY_CLOSE: "]">
+| <COMMA: ",">
+| <OBJECT_OPEN: "{">
+| <OBJECT_CLOSE: "}">
+| <PAR_OPEN: "(">
+| <PAR_CLOSE: ")">
+| <COLON: ":">
+}
+
+public void parse()  throws XMLStreamException:{}
+	{
+	any(null) eof()
+	}
+
+private void any(String name) throws XMLStreamException: {}
+	{
+	(
+	  objectNode(name)
+	| arrayNode(name)
+	| decimalNode(name)
+	| intNode(name)
+	| boolNode(name)
+	| nilNode(name)
+	| stringNode(name)
+	)
+	}
+
+public void nilNode(String name) throws XMLStreamException:{}
+	{
+	<NULL> {
+		 w.writeEmptyElement(prefix,"null",namespaceURI);
+		 if(name!=null) w.writeAttribute("name",name);
+		 }
+	}
+
+public void boolNode(String name) throws XMLStreamException:{String b=null;}
+	{
+	(
+	  <TRUE>  {b="true";}
+	| <FALSE> {b="false";}
+	)
+		{
+		 w.writeStartElement(prefix,"boolean",namespaceURI);
+		 if(name!=null) w.writeAttribute("name",name);
+		 w.writeCharacters(b);
+		 w.writeEndElement();
+		}
+	}
+
+public void intNode(String name) throws XMLStreamException:{	Token t;}
+	{
+	t=<INT_NUMBER> {
+		 w.writeStartElement(prefix,"number",namespaceURI);
+		 if(name!=null) w.writeAttribute("name",name);
+		 w.writeCharacters(t.image);
+		 w.writeEndElement();
+		}
+	}
+
+public void decimalNode(String name) throws XMLStreamException:{	Token t;}
+	{
+	t=<FLOATING_NUMBER> {
+		 w.writeStartElement(prefix,"number",namespaceURI);
+		 if(name!=null) w.writeAttribute("name",name);
+		 w.writeCharacters(t.image);
+		 w.writeEndElement();
+		}
+	}
+
+public void stringNode(String name)  throws XMLStreamException :{	String s;}
+	{
+	s=characters()
+		{
+	 	w.writeStartElement(prefix,"string",namespaceURI);
+		 if(name!=null) w.writeAttribute("name",name);
+		 w.writeCharacters(s);
+		 w.writeEndElement();
+		 }
+	}
+
+
+private String characters() throws XMLStreamException :
+	{
+	Token t;
+	}
+	{
+	(
+	t=<SIMPLE_QUOTE_LITERAL>
+		{
+		return  unescape(t.image.substring(1,t.image.length()-1));
+		}
+	| t=<DOUBLE_QUOTE_LITERAL>
+		{
+		return unescape(t.image.substring(1,t.image.length()-1));
+		}
+	| t=<IDENTIFIER>
+	     {
+	     return t.image;
+	     }
+	)
+	}
+
+public void arrayNode(String name) throws XMLStreamException : { }
+	{
+	openArray()
+		{
+		w.writeStartElement(prefix,"array",namespaceURI);
+		if(name!=null) w.writeAttribute("name",name);
+		}
+	( any(null) (comma() any(null) ) * )?
+	closeArray()
+		{
+		w.writeEndElement();
+		}
+	}
+
+public void objectNode(String name)  throws XMLStreamException : {}
+	{
+	openObject() 
+		{
+		w.writeStartElement(prefix,"object",namespaceURI);
+		if(name!=null) w.writeAttribute("name",name);
+		}
+	( keyValue() (comma() keyValue())*)?
+	closeObject()
+		{
+		w.writeEndElement();
+		}
+	}
+
+public void colon():
+   {
+   }
+   {
+   <COLON>
+   }
+
+private void keyValue()  throws XMLStreamException:
+	{String k; }
+	{
+	k=characters() colon() any(k)
+	}
+	
+/** function for streaming big object/array */
+public void openObject():{}
+	{
+	<OBJECT_OPEN>
+	}
+
+/** function for streaming big object/array */
+public void closeObject():{}
+	{
+	<OBJECT_CLOSE>
+	}
+
+/** function for streaming big object/array */
+public void openArray():{}
+	{
+	<ARRAY_OPEN>
+	}
+
+/** function for streaming big object/array */
+public void closeArray():{}
+	{
+	<ARRAY_CLOSE>
+	}
+
+/** function for streaming big object/array */
+public void comma():{}
+	{
+	<COMMA>
+	}
+
+/** go to EOF, check that there are only some blanks chars */
+public void eof():{}
+	{
+	<EOF>
+	}	
+	
+
