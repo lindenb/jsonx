@@ -1,4 +1,4 @@
-package com.github.lindenb.jsonx;
+package com.github.lindenb.jsonx.io;
 
 import java.io.File;
 import java.io.FileReader;
@@ -15,16 +15,19 @@ import javax.xml.stream.events.Attribute;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 
-import com.github.lindenb.jsonx.impl.JsonArrayImpl;
-import com.github.lindenb.jsonx.impl.JsonNullImpl;
-import com.github.lindenb.jsonx.impl.JsonObjectImpl;
-import com.github.lindenb.jsonx.impl.JsonPrimitiveImpl;
-
+import com.github.lindenb.jsonx.JsonArray;
+import com.github.lindenb.jsonx.JsonConstants;
+import com.github.lindenb.jsonx.JsonElement;
+import com.github.lindenb.jsonx.JsonFactory;
+import com.github.lindenb.jsonx.JsonNull;
+import com.github.lindenb.jsonx.JsonObject;
+import com.github.lindenb.jsonx.JsonPrimitive;
 public class JsonXmlReader
 	extends JsonConstants
 	{
 	private static final QName ATT_NAME=new QName("name");
-
+	private JsonFactory jsonFactory=new JsonFactory();
+	
 	public JsonElement parse(File f) throws IOException,XMLStreamException
 		{
 		XMLInputFactory xif=XMLInputFactory.newFactory();
@@ -67,6 +70,10 @@ public class JsonXmlReader
 	public JsonElement any(XMLEventReader r,StartElement E)throws XMLStreamException
 		{
 		String name=E.getName().getLocalPart();
+		if(!JsonConstants.XMLNS.equals(E.getName().getNamespaceURI()))
+			{
+			throw new XMLStreamException("illegal namespace in xml:", E.getLocation());
+			}
 		if(name.equals("string"))
 			{
 			return parseString(r);
@@ -85,11 +92,11 @@ public class JsonXmlReader
 			}
 		else if(name.equals("array"))
 			{
-			return parseArray(r);
+			return _parseArray(r);
 			}
 		else if(name.equals("object"))
 			{
-			return parseObject(r);
+			return _parseObject(r);
 			}
 		throw new XMLStreamException("not a json element "+name);
 		}
@@ -98,13 +105,13 @@ public class JsonXmlReader
 	
 	public JsonPrimitive parseString(XMLEventReader r) throws XMLStreamException
 		{
-		return new JsonPrimitiveImpl(parseData(r));
+		return jsonFactory.newString(parseData(r));
 		}
 	public JsonPrimitive parseBoolean(XMLEventReader r) throws XMLStreamException
 		{
 		String s=parseData(r);
-		if(s.equals("true")) return new JsonPrimitiveImpl(Boolean.TRUE);
-		if(s.equals("false")) return new JsonPrimitiveImpl(Boolean.FALSE);
+		if(s.equals("true")) return jsonFactory.newBoolean(Boolean.TRUE);
+		if(s.equals("false")) return jsonFactory.newBoolean(Boolean.FALSE);
 		throw new XMLStreamException("not a boolean "+s);
 		}
 	
@@ -114,14 +121,14 @@ public class JsonXmlReader
 		try
 			{
 			BigInteger bi=new BigInteger(s);
-			return new JsonPrimitiveImpl(bi);
+			return jsonFactory.newNumber(bi);
 			}
 		catch(NumberFormatException err)
 			{
 			try
 				{
 				BigDecimal bd=new BigDecimal(s);
-				return new JsonPrimitiveImpl(bd);
+				return jsonFactory.newNumber(bd);
 				}
 			catch(NumberFormatException err2)
 				{
@@ -137,7 +144,7 @@ public class JsonXmlReader
 			XMLEvent evt=r.nextEvent();
 			if(evt.isEndElement())
 				{
-				return new JsonNullImpl();
+				return this.jsonFactory.newNull();
 				}
 			else
 				{
@@ -147,9 +154,9 @@ public class JsonXmlReader
 		throw new XMLStreamException("illegal state for null");
 		}
 
-	private JsonArray parseArray(XMLEventReader r) throws XMLStreamException
+	private JsonArray _parseArray(XMLEventReader r) throws XMLStreamException
 		{
-		JsonArrayImpl array=new JsonArrayImpl();
+		JsonArray array=jsonFactory.newArray();
 		while(r.hasNext())
 			{
 			XMLEvent evt=r.nextEvent();
@@ -171,9 +178,9 @@ public class JsonXmlReader
 		return array;
 		}
 
-	private JsonObject parseObject(XMLEventReader r) throws XMLStreamException
+	public JsonObject _parseObject(XMLEventReader r) throws XMLStreamException
 		{
-		JsonObjectImpl map=new JsonObjectImpl();
+		JsonObject map=jsonFactory.newObject();
 		while(r.hasNext())
 			{
 			XMLEvent evt=r.nextEvent();

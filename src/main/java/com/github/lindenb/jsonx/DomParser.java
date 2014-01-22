@@ -84,6 +84,10 @@ public class DomParser extends JsonConstants
 						Element E=Element.class.cast(c);
 						Attr att=E.getAttributeNode("name");
 						if(att==null) throw new IllegalArgumentException("@name missing in object"); 
+						if(object.containsKey(att.getValue()))
+							{
+							 throw new IllegalArgumentException("duplicate key @name "+att.getValue()); 
+							}
 						object.put(att.getValue(),_parse(E));
 						break;
 						}
